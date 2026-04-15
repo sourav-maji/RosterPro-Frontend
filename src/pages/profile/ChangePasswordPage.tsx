@@ -2,11 +2,14 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
 import { authApi } from "@/api/auth.api";
+import { useAuthStore } from "@/store/auth.store";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { AlertTriangle } from "lucide-react";
 
 const schema = z.object({
   oldPassword: z.string().min(1, "Current password is required"),
@@ -20,6 +23,9 @@ const schema = z.object({
 type FormData = z.infer<typeof schema>;
 
 export default function ChangePasswordPage() {
+  const navigate = useNavigate();
+  const mustChangePassword = useAuthStore((s) => s.mustChangePassword);
+
   const { register, handleSubmit, reset, formState: { errors, isSubmitting } } = useForm<FormData>({
     resolver: zodResolver(schema),
   });
@@ -27,8 +33,16 @@ export default function ChangePasswordPage() {
   const onSubmit = async (data: FormData) => {
     try {
       await authApi.changePassword(data.oldPassword, data.newPassword);
+      // Clear the flag in the store so the banner disappears and nav is unrestricted
+      useAuthStore.setState({ mustChangePassword: false });
       toast.success("Password changed successfully");
       reset();
+      if (mustChangePassword) {
+        // Send them to their role-appropriate home
+        const user = useAuthStore.getState().user;
+        const roleCode = typeof user?.roleId === "object" ? (user.roleId as { code?: string }).code : null;
+        navigate(roleCode === "PLATFORM_ADMIN" ? "/platform" : "/app");
+      }
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message ?? "Failed to change password";
       toast.error(msg);
@@ -41,6 +55,15 @@ export default function ChangePasswordPage() {
         <h1 className="text-2xl font-bold">Change Password</h1>
         <p className="text-muted-foreground">Update your account password</p>
       </div>
+
+      {mustChangePassword && (
+        <div className="flex items-start gap-3 rounded-lg border border-yellow-300 bg-yellow-50 p-4 text-yellow-800">
+          <AlertTriangle className="h-5 w-5 shrink-0 mt-0.5" />
+          <p className="text-sm font-medium">
+            Your account was set up with a temporary password. You must change it before continuing.
+          </p>
+        </div>
+      )}
 
       <Card>
         <CardHeader><CardTitle className="text-base">Update Password</CardTitle></CardHeader>

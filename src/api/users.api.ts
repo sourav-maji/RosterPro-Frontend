@@ -19,8 +19,8 @@ export const usersApi = {
   create: (payload: CreateUserPayload) =>
     apiClient.post<ApiResponse<User>>("/users", payload),
 
-  list: (search?: string) =>
-    apiClient.get<ApiResponse<User[]>>("/users", { params: search ? { search } : {} }),
+  list: (search?: string, orgId?: string) =>
+    apiClient.get<ApiResponse<User[]>>("/users", { params: { ...(search ? { search } : {}), ...(orgId ? { orgId } : {}) } }),
 
   count: () => apiClient.get<ApiResponse<{ count: number }>>("/users/count"),
 

@@ -6,6 +6,7 @@ import { z } from "zod";
 import { usersApi } from "@/api/users.api";
 import { rolesApi } from "@/api/roles.api";
 import { departmentsApi } from "@/api/departments.api";
+import { authApi } from "@/api/auth.api";
 import type { User, Role, Department } from "@/types/models";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,18 +18,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Skeleton } from "@/components/ui/skeleton";
 import { Plus, Pencil, Trash2, ToggleLeft, FolderInput } from "lucide-react";
 
-const createSchema = z.object({
+const userSchema = z.object({
   name: z.string().min(1, "Name required"),
   email: z.string().email("Invalid email"),
   roleId: z.string().min(1, "Role required"),
+  // Only required when creating a new user (validated contextually in onSubmit)
+  password: z.string().optional(),
 });
-const updateSchema = z.object({
-  name: z.string().min(1, "Name required"),
-  email: z.string().email("Invalid email"),
-  roleId: z.string().min(1, "Role required"),
-});
-type CreateForm = z.infer<typeof createSchema>;
-type UpdateForm = z.infer<typeof updateSchema>;
+type CreateForm = z.infer<typeof userSchema>;
 
 export default function UsersPage() {
   const [users, setUsers] = useState<User[]>([]);
@@ -44,7 +41,7 @@ export default function UsersPage() {
   const [deleteTarget, setDeleteTarget] = useState<User | null>(null);
   const [saving, setSaving] = useState(false);
 
-  const form = useForm<CreateForm>({ resolver: zodResolver(createSchema) });
+  const form = useForm<CreateForm>({ resolver: zodResolver(userSchema) });
 
   const getRoleName = (roleId: unknown) => {
     if (typeof roleId === "object" && roleId !== null) return (roleId as Role).name;
@@ -71,7 +68,7 @@ export default function UsersPage() {
 
   const openCreate = () => {
     setEditing(null);
-    form.reset({ name: "", email: "", roleId: "" });
+    form.reset({ name: "", email: "", roleId: "", password: "" });
     setDialogOpen(true);
   };
 
@@ -85,15 +82,24 @@ export default function UsersPage() {
     setDialogOpen(true);
   };
 
-  const onSubmit = async (data: UpdateForm) => {
+  const onSubmit = async (data: CreateForm) => {
     setSaving(true);
     try {
       if (editing) {
-        await usersApi.update(editing._id, data);
+        await usersApi.update(editing._id, { name: data.name, email: data.email, roleId: data.roleId });
         toast.success("User updated");
       } else {
-        await usersApi.create(data);
-        toast.success("User created");
+        if (!data.password || data.password.length < 6) {
+          form.setError("password", { message: "Password must be at least 6 characters" });
+          setSaving(false);
+          return;
+        }
+        // 1. Create the user record
+        const createRes = await usersApi.create({ name: data.name, email: data.email, roleId: data.roleId });
+        const newUserId: string = createRes.data.data._id;
+        // 2. Register login credentials (sets mustChangePassword=true on backend)
+        await authApi.registerLocal({ userId: newUserId, email: data.email, password: data.password });
+        toast.success("User created — they must change their password on first login");
       }
       setDialogOpen(false);
       load();
@@ -213,6 +219,19 @@ export default function UsersPage() {
               </Select>
               {form.formState.errors.roleId && <p className="text-sm text-destructive">{form.formState.errors.roleId.message}</p>}
             </div>
+            {!editing && (
+              <div className="space-y-2">
+                <Label>Temporary Password</Label>
+                <Input
+                  type="password"
+                  autoComplete="new-password"
+                  placeholder="Min. 6 characters"
+                  {...form.register("password")}
+                />
+                {form.formState.errors.password && <p className="text-sm text-destructive">{form.formState.errors.password.message}</p>}
+                <p className="text-xs text-muted-foreground">User will be required to change this on first login.</p>
+              </div>
+            )}
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button>
               <Button type="submit" disabled={saving}>{saving ? "Saving…" : "Save"}</Button>

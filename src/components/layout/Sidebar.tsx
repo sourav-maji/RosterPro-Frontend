@@ -27,6 +27,7 @@ type NavItem = {
 const platformNav: NavItem[] = [
   { label: "Dashboard", to: "/platform", icon: LayoutDashboard },
   { label: "Organizations", to: "/platform/orgs", icon: Building2 },
+  { label: "User Assignment", to: "/platform/org-users", icon: Users },
 ];
 
 const tenantNav: NavItem[] = [

@@ -10,6 +10,7 @@ import LoginPage from "@/pages/auth/LoginPage";
 // Platform
 import PlatformDashboardPage from "@/pages/platform/PlatformDashboardPage";
 import OrgListPage from "@/pages/platform/OrgListPage";
+import PlatformUsersPage from "@/pages/platform/PlatformUsersPage";
 
 // Tenant
 import TenantDashboardPage from "@/pages/tenant/TenantDashboardPage";
@@ -46,6 +47,7 @@ export default function AppRouter() {
           <Route path="/platform" element={<RoleRoute allowedRoles={["PLATFORM_ADMIN"]} redirectTo="/app" />}>
             <Route index element={<PlatformDashboardPage />} />
             <Route path="orgs" element={<OrgListPage />} />
+            <Route path="org-users" element={<PlatformUsersPage />} />
           </Route>
 
           {/* Tenant Admin */}

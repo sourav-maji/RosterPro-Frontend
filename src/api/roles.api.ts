@@ -5,7 +5,8 @@ export const rolesApi = {
   create: (payload: { name: string; code: string }) =>
     apiClient.post<ApiResponse<Role>>("/roles", payload),
 
-  list: () => apiClient.get<ApiResponse<Role[]>>("/roles"),
+  list: (orgId?: string) =>
+    apiClient.get<ApiResponse<Role[]>>("/roles", { params: orgId ? { orgId } : {} }),
 
   update: (id: string, payload: { name?: string; code?: string }) =>
     apiClient.put<ApiResponse<Role>>(`/roles/${id}`, payload),

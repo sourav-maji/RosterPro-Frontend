@@ -29,6 +29,13 @@ export default function LoginPage() {
   const onSubmit = async (data: LoginForm) => {
     try {
       await login(data.email, data.password);
+
+      // Force password change before anything else
+      if (useAuthStore.getState().mustChangePassword) {
+        navigate("/profile/change-password");
+        return;
+      }
+
       const updatedUser = useAuthStore.getState().user;
       const updatedRole =
         typeof updatedUser?.roleId === "object"

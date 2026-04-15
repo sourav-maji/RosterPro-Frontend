@@ -9,6 +9,7 @@ interface AuthState {
   refreshToken: string | null;
   permissions: string[];
   isAuthenticated: boolean;
+  mustChangePassword: boolean;
 
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
@@ -23,10 +24,11 @@ export const useAuthStore = create<AuthState>()(
       refreshToken: null,
       permissions: [],
       isAuthenticated: false,
+      mustChangePassword: false,
 
       login: async (email, password) => {
         const res = await authApi.login(email, password);
-        const { accessToken, refreshToken, user } = res.data.data;
+        const { accessToken, refreshToken, user, mustChangePassword } = res.data.data;
 
         localStorage.setItem("accessToken", accessToken);
         localStorage.setItem("refreshToken", refreshToken);
@@ -40,7 +42,7 @@ export const useAuthStore = create<AuthState>()(
           permissions = [];
         }
 
-        set({ user, accessToken, refreshToken, permissions, isAuthenticated: true });
+        set({ user, accessToken, refreshToken, permissions, isAuthenticated: true, mustChangePassword: mustChangePassword ?? false });
       },
 
       logout: async () => {
@@ -56,7 +58,7 @@ export const useAuthStore = create<AuthState>()(
         localStorage.removeItem("accessToken");
         localStorage.removeItem("refreshToken");
 
-        set({ user: null, accessToken: null, refreshToken: null, permissions: [], isAuthenticated: false });
+        set({ user: null, accessToken: null, refreshToken: null, permissions: [], isAuthenticated: false, mustChangePassword: false });
       },
 
       setTokens: (accessToken, refreshToken) => {
@@ -73,6 +75,7 @@ export const useAuthStore = create<AuthState>()(
         refreshToken: state.refreshToken,
         permissions: state.permissions,
         isAuthenticated: state.isAuthenticated,
+        mustChangePassword: state.mustChangePassword,
       }),
     }
   )
