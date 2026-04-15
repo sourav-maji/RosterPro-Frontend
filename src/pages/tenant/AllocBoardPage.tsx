@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { allocApi } from "@/api/alloc.api";
 import { departmentsApi } from "@/api/departments.api";
@@ -44,7 +44,7 @@ export default function AllocBoardPage() {
     usersApi.list().then((r) => setUsers(r.data.data)).catch(() => {});
   }, []);
 
-  const load = async () => {
+  const load = useCallback(async () => {
     if (!deptId || !date) return;
     setLoading(true);
     setBoard(null);
@@ -53,9 +53,9 @@ export default function AllocBoardPage() {
       setBoard(res.data.data);
     } catch { toast.error("Failed to load shift board"); }
     finally { setLoading(false); }
-  };
+  }, [deptId, date]);
 
-  useEffect(() => { load(); }, [deptId, date]);
+  useEffect(() => { load(); }, [load]);
 
   const handleSwap = async () => {
     if (!swapDialog || !newUserId) return;

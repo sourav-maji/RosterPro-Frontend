@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { allocApi } from "@/api/alloc.api";
 import { departmentsApi } from "@/api/departments.api";
@@ -34,7 +34,7 @@ export default function CoveragePage() {
     departmentsApi.list().then((r) => setDepts(r.data.data)).catch(() => {});
   }, []);
 
-  const load = async () => {
+  const load = useCallback(async () => {
     if (!deptId || !date) return;
     setLoading(true);
     setCoverage(null);
@@ -43,9 +43,9 @@ export default function CoveragePage() {
       setCoverage(res.data.data);
     } catch { toast.error("Failed to load coverage"); }
     finally { setLoading(false); }
-  };
+  }, [deptId, date]);
 
-  useEffect(() => { load(); }, [deptId, date]);
+  useEffect(() => { load(); }, [load]);
 
   const shifts = coverage ? Object.keys(coverage) : [];
 

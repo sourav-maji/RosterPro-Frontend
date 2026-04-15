@@ -48,17 +48,17 @@ export default function ChangePasswordPage() {
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <div className="space-y-2">
               <Label>Current Password</Label>
-              <Input type="password" {...register("oldPassword")} placeholder="••••••••" />
+              <Input type="password" autoComplete="current-password" {...register("oldPassword")} placeholder="••••••••" />
               {errors.oldPassword && <p className="text-sm text-destructive">{errors.oldPassword.message}</p>}
             </div>
             <div className="space-y-2">
               <Label>New Password</Label>
-              <Input type="password" {...register("newPassword")} placeholder="••••••••" />
+              <Input type="password" autoComplete="new-password" {...register("newPassword")} placeholder="••••••••" />
               {errors.newPassword && <p className="text-sm text-destructive">{errors.newPassword.message}</p>}
             </div>
             <div className="space-y-2">
               <Label>Confirm New Password</Label>
-              <Input type="password" {...register("confirmPassword")} placeholder="••••••••" />
+              <Input type="password" autoComplete="new-password" {...register("confirmPassword")} placeholder="••••••••" />
               {errors.confirmPassword && <p className="text-sm text-destructive">{errors.confirmPassword.message}</p>}
             </div>
             <Button type="submit" disabled={isSubmitting} className="w-full">

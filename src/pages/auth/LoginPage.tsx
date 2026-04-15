@@ -19,7 +19,6 @@ type LoginForm = z.infer<typeof loginSchema>;
 export default function LoginPage() {
   const navigate = useNavigate();
   const login = useAuthStore((s) => s.login);
-  const user = useAuthStore((s) => s.user);
 
   const {
     register,
@@ -30,13 +29,6 @@ export default function LoginPage() {
   const onSubmit = async (data: LoginForm) => {
     try {
       await login(data.email, data.password);
-      // Navigate based on roleCode
-      const roleCode =
-        typeof user?.roleId === "object"
-          ? (user.roleId as { code?: string }).code
-          : null;
-
-      // Re-read from store after login
       const updatedUser = useAuthStore.getState().user;
       const updatedRole =
         typeof updatedUser?.roleId === "object"

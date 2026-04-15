@@ -1,7 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { useEffect } from "react";
 import { schedulerApi } from "@/api/scheduler.api";
 import { departmentsApi } from "@/api/departments.api";
 import type { Department, SchedulerPreviewData, ScheduleDay } from "@/types/models";

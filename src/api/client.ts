@@ -79,8 +79,12 @@ apiClient.interceptors.response.use(
 );
 
 function redirectToLogin() {
+  // Clear individual token keys used by the Axios interceptor
   localStorage.removeItem("accessToken");
   localStorage.removeItem("refreshToken");
+  // Clear the Zustand persist key so the store does not rehydrate with
+  // stale isAuthenticated:true on the next page load (S1 / OWASP A07)
+  localStorage.removeItem("auth-store");
   window.location.href = "/login";
 }
 
