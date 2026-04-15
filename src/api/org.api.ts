@@ -1,5 +1,5 @@
 import apiClient from "./client";
-import type { ApiResponse, Organization, OrgType, OrgStatus } from "@/types/models";
+import type { ApiResponse, Organization, User, OrgType, OrgStatus } from "@/types/models";
 
 export interface CreateOrgPayload {
   name: string;
@@ -7,6 +7,15 @@ export interface CreateOrgPayload {
   type?: OrgType;
   address?: string;
   phone?: string;
+  // Optional: bootstrap a Tenant Admin user at org creation time
+  adminName?: string;
+  adminEmail?: string;
+  adminPassword?: string;
+}
+
+export interface CreateOrgResponse {
+  org: Organization;
+  adminUser: User | null;
 }
 
 export interface UpdateOrgPayload extends Partial<CreateOrgPayload> {
@@ -16,7 +25,7 @@ export interface UpdateOrgPayload extends Partial<CreateOrgPayload> {
 
 export const orgApi = {
   create: (payload: CreateOrgPayload) =>
-    apiClient.post<ApiResponse<Organization>>("/org", payload),
+    apiClient.post<ApiResponse<CreateOrgResponse>>("/org", payload),
 
   list: () => apiClient.get<ApiResponse<Organization[]>>("/org"),
 

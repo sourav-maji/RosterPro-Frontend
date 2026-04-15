@@ -25,7 +25,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Plus, Pencil, Trash2, ToggleLeft } from "lucide-react";
+import { Plus, Pencil, Trash2, ToggleLeft, UserPlus } from "lucide-react";
 
 const orgSchema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -33,6 +33,19 @@ const orgSchema = z.object({
   type: z.enum(["HOSPITAL", "FACTORY", "GENERIC"]).default("GENERIC"),
   address: z.string().optional(),
   phone: z.string().optional(),
+  // Tenant admin bootstrap (create-only, all or none)
+  adminName: z.string().optional(),
+  adminEmail: z.string().optional(),
+  adminPassword: z.string().optional(),
+}).superRefine((d, ctx) => {
+  const any = d.adminName || d.adminEmail || d.adminPassword;
+  if (any) {
+    if (!d.adminName) ctx.addIssue({ path: ["adminName"], code: "custom", message: "Admin name required" });
+    if (!d.adminEmail || !/^[^@]+@[^@]+\.[^@]+$/.test(d.adminEmail))
+      ctx.addIssue({ path: ["adminEmail"], code: "custom", message: "Valid admin email required" });
+    if (!d.adminPassword || d.adminPassword.length < 6)
+      ctx.addIssue({ path: ["adminPassword"], code: "custom", message: "Password must be at least 6 characters" });
+  }
 });
 
 type OrgForm = z.infer<typeof orgSchema>;
@@ -74,7 +87,7 @@ export default function OrgListPage() {
 
   const openCreate = () => {
     setEditing(null);
-    reset({ type: "GENERIC" });
+    reset({ type: "GENERIC", adminName: "", adminEmail: "", adminPassword: "" });
     setDialogOpen(true);
   };
 
@@ -91,8 +104,13 @@ export default function OrgListPage() {
         await orgApi.update(editing._id, data as UpdateOrgPayload);
         toast.success("Organization updated");
       } else {
-        await orgApi.create(data as CreateOrgPayload);
-        toast.success("Organization created");
+        const res = await orgApi.create(data as CreateOrgPayload);
+        const adminUser = res.data.data?.adminUser;
+        if (adminUser) {
+          toast.success(`Organization created with Tenant Admin "${adminUser.name}"`);
+        } else {
+          toast.success("Organization created");
+        }
       }
       setDialogOpen(false);
       load();
@@ -229,6 +247,35 @@ export default function OrgListPage() {
               <Label>Phone (optional)</Label>
               <Input {...register("phone")} placeholder="+1234567890" />
             </div>
+
+            {/* Tenant Admin bootstrap — only shown on create */}
+            {!editing && (
+              <div className="space-y-3 rounded-lg border border-dashed p-4">
+                <div className="flex items-center gap-2 text-sm font-medium">
+                  <UserPlus className="h-4 w-4 text-primary" />
+                  Initial Tenant Admin (optional)
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Fill all three fields to automatically create a Tenant Admin user for this org.
+                  They will be asked to change their password on first login.
+                </p>
+                <div className="space-y-2">
+                  <Label>Admin Name</Label>
+                  <Input {...register("adminName")} placeholder="Jane Smith" />
+                  {errors.adminName && <p className="text-sm text-destructive">{errors.adminName.message}</p>}
+                </div>
+                <div className="space-y-2">
+                  <Label>Admin Email</Label>
+                  <Input {...register("adminEmail")} placeholder="jane@clinic.com" />
+                  {errors.adminEmail && <p className="text-sm text-destructive">{errors.adminEmail.message}</p>}
+                </div>
+                <div className="space-y-2">
+                  <Label>Temporary Password</Label>
+                  <Input type="password" autoComplete="new-password" {...register("adminPassword")} placeholder="Min. 6 characters" />
+                  {errors.adminPassword && <p className="text-sm text-destructive">{errors.adminPassword.message}</p>}
+                </div>
+              </div>
+            )}
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button>
               <Button type="submit" disabled={saving}>{saving ? "Saving…" : "Save"}</Button>
