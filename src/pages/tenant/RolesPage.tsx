@@ -17,7 +17,7 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2, CheckSquare, Square } from "lucide-react";
 
 const roleSchema = z.object({
   name: z.string().min(1, "Required"),
@@ -119,6 +119,17 @@ export default function RolesPage() {
     }
   };
 
+  const allPermIds = perms.map((p) => p._id);
+  const allSelected = allPermIds.length > 0 && allPermIds.every((id) => assignedPermIds.has(id));
+
+  const toggleSelectAll = () => {
+    if (allSelected) {
+      setAssignedPermIds(new Set());
+    } else {
+      setAssignedPermIds(new Set(allPermIds));
+    }
+  };
+
   const grouped = groupByModule(perms);
 
   return (
@@ -181,7 +192,13 @@ export default function RolesPage() {
               {selectedRole ? `Permissions for ${selectedRole.name}` : "Select a role to assign permissions"}
             </h2>
             {selectedRole && (
-              <Button size="sm" onClick={savePermissions} disabled={saving}>{saving ? "Saving…" : "Save Permissions"}</Button>
+              <div className="flex items-center gap-2">
+                <Button size="sm" variant="outline" onClick={toggleSelectAll}>
+                  {allSelected ? <Square className="h-4 w-4 mr-1" /> : <CheckSquare className="h-4 w-4 mr-1" />}
+                  {allSelected ? "Deselect All" : "Select All"}
+                </Button>
+                <Button size="sm" onClick={savePermissions} disabled={saving}>{saving ? "Saving…" : "Save Permissions"}</Button>
+              </div>
             )}
           </div>
 
