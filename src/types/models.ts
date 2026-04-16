@@ -153,7 +153,7 @@ export interface Allocation {
 }
 
 // ─── Board / Calendar / Coverage ───────────────────────────────────────────────
-export type BoardData = Record<string, { userId: string; name: string; status: AllocStatus; source: AllocSource }[]>;
+export type BoardData = Record<string, { allocId: string; userId: string; name: string; status: AllocStatus; source: AllocSource }[]>;
 
 export interface CalendarEntry {
   date: string;

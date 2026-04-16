@@ -142,7 +142,7 @@ export default function AllocBoardPage() {
                         variant="ghost"
                         size="icon"
                         title="Swap user"
-                        onClick={() => { setSwapDialog({ allocId: entry.userId, shift: shiftName, currentUser: entry.name }); setNewUserId(""); }}
+                        onClick={() => { setSwapDialog({ allocId: entry.allocId, shift: shiftName, currentUser: entry.name }); setNewUserId(""); }}
                       >
                         <ArrowLeftRight className="h-4 w-4" />
                       </Button>
