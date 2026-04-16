@@ -36,7 +36,7 @@ export default function ShiftsPage() {
   const [shifts, setShifts] = useState<Shift[]>([]);
   const [depts, setDepts] = useState<Department[]>([]);
   const [loading, setLoading] = useState(true);
-  const [deptFilter, setDeptFilter] = useState("");
+  const [deptFilter, setDeptFilter] = useState("__all__");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<Shift | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Shift | null>(null);
@@ -53,7 +53,7 @@ export default function ShiftsPage() {
     setLoading(true);
     try {
       const [sRes, dRes] = await Promise.all([
-        shiftsApi.list(deptFilter || undefined),
+        shiftsApi.list(deptFilter === "__all__" ? undefined : deptFilter),
         departmentsApi.list(),
       ]);
       setShifts(sRes.data.data);
@@ -121,7 +121,7 @@ export default function ShiftsPage() {
         <Select value={deptFilter} onValueChange={setDeptFilter}>
           <SelectTrigger><SelectValue placeholder="All departments" /></SelectTrigger>
           <SelectContent>
-            <SelectItem value="">All departments</SelectItem>
+            <SelectItem value="__all__">All departments</SelectItem>
             {depts.map((d) => <SelectItem key={d._id} value={d._id}>{d.name}</SelectItem>)}
           </SelectContent>
         </Select>

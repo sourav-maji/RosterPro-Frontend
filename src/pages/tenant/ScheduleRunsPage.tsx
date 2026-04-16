@@ -91,7 +91,7 @@ function RunDetailModal({ run, onClose }: { run: ScheduleRun; onClose: () => voi
 export default function ScheduleRunsPage() {
   const [runs, setRuns] = useState<ScheduleRun[]>([]);
   const [depts, setDepts] = useState<Department[]>([]);
-  const [deptFilter, setDeptFilter] = useState("");
+  const [deptFilter, setDeptFilter] = useState("__all__");
   const [loading, setLoading] = useState(true);
   const [viewRun, setViewRun] = useState<ScheduleRun | null>(null);
 
@@ -99,7 +99,7 @@ export default function ScheduleRunsPage() {
     setLoading(true);
     try {
       const [rRes, dRes] = await Promise.all([
-        schedulerApi.listRuns(deptFilter || undefined),
+        schedulerApi.listRuns(deptFilter === "__all__" ? undefined : deptFilter),
         departmentsApi.list(),
       ]);
       setRuns(rRes.data.data);
@@ -121,7 +121,7 @@ export default function ScheduleRunsPage() {
         <Select value={deptFilter} onValueChange={setDeptFilter}>
           <SelectTrigger><SelectValue placeholder="All departments" /></SelectTrigger>
           <SelectContent>
-            <SelectItem value="">All departments</SelectItem>
+            <SelectItem value="__all__">All departments</SelectItem>
             {depts.map((d) => <SelectItem key={d._id} value={d._id}>{d.name}</SelectItem>)}
           </SelectContent>
         </Select>
