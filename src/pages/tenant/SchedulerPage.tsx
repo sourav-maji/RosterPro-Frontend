@@ -19,7 +19,7 @@ function StatusIcon({ status }: { status: string }) {
   return <XCircle className="h-5 w-5 text-red-600" />;
 }
 
-function ScheduleTable({ schedule }: { schedule: ScheduleDay[] }) {
+function ScheduleTable({ schedule, nameMap }: { schedule: ScheduleDay[]; nameMap: Record<string, string> }) {
   if (!schedule.length) return null;
   const shiftNames = Array.from(new Set(schedule.flatMap((d) => Object.keys(d.shifts))));
 
@@ -42,7 +42,9 @@ function ScheduleTable({ schedule }: { schedule: ScheduleDay[] }) {
                 <td key={d.day} className="p-3 align-top">
                   <div className="space-y-1">
                     {(d.shifts[shift] ?? []).map((uid) => (
-                      <div key={uid} className="text-xs bg-primary/10 rounded px-2 py-1">{uid}</div>
+                      <div key={uid} className="text-xs bg-primary/10 rounded px-2 py-1">
+                        {nameMap[uid] ?? uid}
+                      </div>
                     ))}
                     {(d.shifts[shift] ?? []).length === 0 && (
                       <span className="text-xs text-muted-foreground">—</span>
@@ -206,7 +208,7 @@ export default function SchedulerPage() {
           {/* Schedule table */}
           <div>
             <h2 className="text-lg font-semibold mb-3">Generated Schedule</h2>
-            <ScheduleTable schedule={preview.result.schedule} />
+            <ScheduleTable schedule={preview.result.schedule} nameMap={preview.meta.nameMap ?? {}} />
           </div>
         </div>
       )}

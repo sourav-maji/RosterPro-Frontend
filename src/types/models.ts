@@ -203,8 +203,10 @@ export interface SchedulerResult {
 }
 
 export interface SchedulerMeta {
+  weekStart: string;
   shiftMap: Record<string, string>;
   userMap: Record<string, string>;
+  nameMap: Record<string, string>;
 }
 
 export interface SchedulerPreviewData {
