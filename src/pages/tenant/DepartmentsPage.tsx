@@ -4,6 +4,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { departmentsApi } from "@/api/departments.api";
+import { usersApi } from "@/api/users.api";
 import type { Department, User } from "@/types/models";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,8 +18,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Plus, Pencil, Trash2, Users } from "lucide-react";
+import { Plus, Pencil, Trash2, Users, UserMinus } from "lucide-react";
 
 const schema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -34,7 +36,10 @@ export default function DepartmentsPage() {
   const [deleteTarget, setDeleteTarget] = useState<Department | null>(null);
   const [usersTarget, setUsersTarget] = useState<Department | null>(null);
   const [deptUsers, setDeptUsers] = useState<User[]>([]);
+  const [allUsers, setAllUsers] = useState<User[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(false);
+  const [assignUserId, setAssignUserId] = useState("__none__");
+  const [assigning, setAssigning] = useState(false);
   const [saving, setSaving] = useState(false);
 
   const { register, handleSubmit, reset, formState: { errors } } = useForm<FormData>({
@@ -88,12 +93,42 @@ export default function DepartmentsPage() {
 
   const openUsers = async (dept: Department) => {
     setUsersTarget(dept);
+    setAssignUserId("__none__");
     setLoadingUsers(true);
     try {
-      const r = await departmentsApi.getUsers(dept._id);
-      setDeptUsers(r.data.data);
+      const [deptRes, allRes] = await Promise.all([
+        departmentsApi.getUsers(dept._id),
+        usersApi.list(),
+      ]);
+      setDeptUsers(deptRes.data.data);
+      setAllUsers(allRes.data.data);
     } catch { toast.error("Failed to load users"); }
     finally { setLoadingUsers(false); }
+  };
+
+  const handleAssignUser = async () => {
+    if (!usersTarget || assignUserId === "__none__") return;
+    setAssigning(true);
+    try {
+      await usersApi.moveDepartment(assignUserId, usersTarget._id);
+      toast.success("User assigned to department");
+      setAssignUserId("__none__");
+      const res = await departmentsApi.getUsers(usersTarget._id);
+      setDeptUsers(res.data.data);
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message ?? "Failed to assign user";
+      toast.error(msg);
+    } finally { setAssigning(false); }
+  };
+
+  const handleRemoveUser = async (userId: string) => {
+    if (!usersTarget) return;
+    try {
+      await usersApi.moveDepartment(userId, null as unknown as string);
+      toast.success("User removed from department");
+      const res = await departmentsApi.getUsers(usersTarget._id);
+      setDeptUsers(res.data.data);
+    } catch { toast.error("Failed to remove user"); }
   };
 
   return (
@@ -171,28 +206,70 @@ export default function DepartmentsPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Users sheet */}
+      {/* Users dialog */}
       <Dialog open={!!usersTarget} onOpenChange={(o) => !o && setUsersTarget(null)}>
         <DialogContent className="max-w-lg">
           <DialogHeader><DialogTitle>Users in {usersTarget?.name}</DialogTitle></DialogHeader>
+
+          {/* Assign user row */}
+          <div className="flex items-center gap-2 border rounded-md p-3 bg-muted/30">
+            <div className="flex-1">
+              <Select value={assignUserId} onValueChange={setAssignUserId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select user to assign…" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__none__">— Select user —</SelectItem>
+                  {allUsers
+                    .filter((u) => u.isActive && !deptUsers.some((du) => du._id === u._id))
+                    .map((u) => (
+                      <SelectItem key={u._id} value={u._id}>
+                        {u.name} <span className="text-muted-foreground text-xs ml-1">({u.email})</span>
+                      </SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <Button
+              size="sm"
+              disabled={assignUserId === "__none__" || assigning}
+              onClick={handleAssignUser}
+            >
+              {assigning ? "Assigning…" : "Assign"}
+            </Button>
+          </div>
+
+          {/* Current members */}
           {loadingUsers
-            ? <div className="space-y-2">{Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-8 w-full" />)}</div>
+            ? <div className="space-y-2">{Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-10 w-full" />)}</div>
             : deptUsers.length === 0
-            ? <p className="text-sm text-muted-foreground py-4">No users in this department.</p>
+            ? <p className="text-sm text-muted-foreground py-2 text-center">No users assigned yet.</p>
             : (
-                <div className="space-y-2 max-h-72 overflow-y-auto">
+                <div className="space-y-2 max-h-64 overflow-y-auto">
                   {deptUsers.map((u) => (
                     <div key={u._id} className="flex items-center justify-between border rounded-md px-3 py-2">
                       <div>
                         <p className="text-sm font-medium">{u.name}</p>
                         <p className="text-xs text-muted-foreground">{u.email}</p>
                       </div>
-                      <Badge variant={u.isActive ? "success" : "destructive"}>{u.isActive ? "Active" : "Inactive"}</Badge>
+                      <div className="flex items-center gap-2">
+                        <Badge variant={u.isActive ? "success" : "destructive"}>{u.isActive ? "Active" : "Inactive"}</Badge>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="text-destructive h-7 w-7"
+                          title="Remove from department"
+                          onClick={() => handleRemoveUser(u._id)}
+                        >
+                          <UserMinus className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </div>
                   ))}
                 </div>
               )
           }
+
           <DialogFooter>
             <Button variant="outline" onClick={() => setUsersTarget(null)}>Close</Button>
           </DialogFooter>
